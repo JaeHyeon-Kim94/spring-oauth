@@ -4,9 +4,8 @@ import io.oauth.authorizationserver.domain.User;
 import io.oauth.authorizationserver.domain.UserJoinDto;
 import io.oauth.authorizationserver.domain.UserLoginDto;
 import io.oauth.authorizationserver.service.UserService;
-import io.oauth.authorizationserver.utils.DecryptUtils;
+import io.oauth.authorizationserver.utils.RSAUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,70 +18,84 @@ import org.springframework.web.bind.annotation.*;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
+import java.util.Map;
 
 @Slf4j
 @Controller
 public class UserController {
 
+    private static final String PRIVATE_KEY_NAME = "__RSA_WEB_Key_";
+
     private final UserService userService;
-    private final KeyPair keyPair;
     private final PasswordEncoder passwordEncoder;
-    private static String modulus;
-    private static String exponent;
 
-
-    public UserController(UserService userService, KeyPair keyPair, PasswordEncoder passwordEncoder) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public UserController(UserService userService, PasswordEncoder passwordEncoder) throws NoSuchAlgorithmException, InvalidKeySpecException {
         this.userService = userService;
-        this.keyPair = keyPair;
         this.passwordEncoder = passwordEncoder;
-        publicKey();
     }
+
 
     @GetMapping("/login")
     public String login(@RequestParam(value="error", required = false) String error,
                         @RequestParam(value="message", required = false) String message
-                        , Model model) throws NoSuchAlgorithmException, InvalidKeySpecException {
+                        , Model model
+                        , HttpSession session) throws NoSuchAlgorithmException, InvalidKeySpecException {
         model.addAttribute("user", new UserLoginDto());
         model.addAttribute("error", error);
         model.addAttribute("message", message);
-        model.addAttribute("modulus", modulus);
-        model.addAttribute("exponent", exponent);
+
+        Map<String, Object> keys = RSAUtil.getRSAKeys();
+
+        model.addAttribute("modulus", (String)keys.get("modulus"));
+        model.addAttribute("exponent", (String)keys.get("exponent"));
+        session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
+
         return "login";
     }
 
-    private void publicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        RSAPublicKeySpec publicSpec = keyFactory.getKeySpec(keyPair.getPublic(), RSAPublicKeySpec.class);
-        modulus = publicSpec.getModulus().toString(16);
-        exponent = publicSpec.getPublicExponent().toString(16);
-    }
-
     @GetMapping("/join")
-    public String join(Model model){
+    public String join(Model model, HttpSession session) throws NoSuchAlgorithmException, InvalidKeySpecException {
         model.addAttribute("user", new UserJoinDto());
-        model.addAttribute("modulus", modulus);
-        model.addAttribute("exponent", exponent);
+        Map<String, Object> keys = RSAUtil.getRSAKeys();
+
+        model.addAttribute("modulus", (String)keys.get("modulus"));
+        model.addAttribute("exponent", (String)keys.get("exponent"));
+        session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
+
         return "join";
     }
 
     @PostMapping("/join")
-    public String join(@Validated @ModelAttribute("user") UserJoinDto userJoinDto, BindingResult bindingResult, Model model) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    public String join(@Validated @ModelAttribute("user") UserJoinDto userJoinDto, BindingResult bindingResult, Model model, HttpSession session) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, InvalidKeySpecException {
         if(bindingResult.hasErrors()){
             log.info(bindingResult.getAllErrors().toString());
-            model.addAttribute("modulus", modulus);
-            model.addAttribute("exponent", exponent);
+            Map<String, Object> keys = RSAUtil.getRSAKeys();
+
+            model.addAttribute("modulus", (String)keys.get("modulus"));
+            model.addAttribute("exponent", (String)keys.get("exponent"));
+            session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
             return "/join";
         }
-        String encryptedPassword = DecryptUtils.decryptValueRsa((RSAPrivateKey) keyPair.getPrivate(), userJoinDto.getPassword());
-        userJoinDto.setPassword(passwordEncoder.encode(encryptedPassword));
+
+
+        PrivateKey privateKey = (PrivateKey) session.getAttribute(PRIVATE_KEY_NAME);
+        if(privateKey == null){
+            throw new RuntimeException("암호화 비밀키 정보를 찾을 수 없음.");
+        }
+        session.removeAttribute(PRIVATE_KEY_NAME);
+
+        String password = userJoinDto.getPassword();
+        try {
+            password = RSAUtil.decryptValueRsa(privateKey, password);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        userJoinDto.setPassword(passwordEncoder.encode(password));
         log.info("joinDto : {}", userJoinDto);
         User user = UserJoinDto.toUser(userJoinDto);
         userService.save(user);

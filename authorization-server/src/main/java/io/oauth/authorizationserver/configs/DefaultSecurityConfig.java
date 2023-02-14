@@ -3,6 +3,7 @@ package io.oauth.authorizationserver.configs;
 import io.oauth.authorizationserver.provider.FormUserAuthenticationProvider;
 import io.oauth.authorizationserver.repository.UserRepository;
 import io.oauth.authorizationserver.service.CustomUserDetailsService;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -18,13 +19,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+import javax.servlet.http.HttpSession;
 import java.security.KeyPair;
 
 @EnableWebSecurity
 public class DefaultSecurityConfig {
 
+
     @Autowired
-    private KeyPair keyPair;
+    private ObjectFactory<HttpSession> httpSessionFactory;
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -42,7 +45,7 @@ public class DefaultSecurityConfig {
                         .loginProcessingUrl("/login")
         );
 
-        http.authenticationProvider(new FormUserAuthenticationProvider(passwordEncoder(), userDetailsService(null), keyPair));
+        http.authenticationProvider(new FormUserAuthenticationProvider(passwordEncoder(), userDetailsService(null), httpSessionFactory));
 
         //logout config
         http

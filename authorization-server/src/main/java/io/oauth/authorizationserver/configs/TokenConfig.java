@@ -40,7 +40,7 @@ public class TokenConfig {
              JwtClaimsSet.Builder claims = context.getClaims();
 
              Principal principal = (Principal)context.getPrincipal().getPrincipal();
-             Map<String, Object> attributes = principal.getAttributes();
+             Map<String, String> attributes = principal.getAttributes();
 
              claims
                      .subject(String.valueOf(principal.getUserId()));
@@ -54,10 +54,10 @@ public class TokenConfig {
 
         //AccessToken Generator
         OAuth2AccessTokenGenerator oAuth2AccessTokenGenerator = new OAuth2AccessTokenGenerator();
-        //TODO
-        oAuth2AccessTokenGenerator.setAccessTokenCustomizer(context -> {
 
-        });
+//        oAuth2AccessTokenGenerator.setAccessTokenCustomizer(context -> {
+//
+//        });
 
         //RefreshToken Generator
         OAuth2RefreshTokenGenerator oAuth2RefreshTokenGenerator = new OAuth2RefreshTokenGenerator();

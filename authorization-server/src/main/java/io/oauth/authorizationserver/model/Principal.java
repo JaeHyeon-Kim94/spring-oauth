@@ -10,64 +10,32 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-public class Principal implements UserDetails, OAuth2User, OidcUser, Serializable {
+public class Principal implements UserDetails, Serializable {
     private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
     private User user;
-    private Set<GrantedAuthority> authorities;
-
-    private Map<String, Object> attributes;
-
-    private String nameAttributeKey;
-
-    private OidcIdToken idToken;
 
     public Principal(User user) {
         this.user = user;
-        setAttributesByUser(user);
     }
 
-    public Principal(User user, Map<String, Object> attributes, Set<GrantedAuthority> authorities, String nameAttributeKey) {
-        this.user = user;
-        this.attributes = attributes;
-        this.authorities = authorities;
-        this.nameAttributeKey = nameAttributeKey;
-    }
-
-    public Principal(User user, Map<String, Object> attributes, Set<GrantedAuthority> authorities, OidcIdToken idToken) {
-        this.user = user;
-        this.attributes = attributes;
-        this.authorities = authorities;
-        this.idToken = idToken;
-    }
-
-    private void setAttributesByUser(User user) {
-        this.attributes = new HashMap<>();
+    public Map<String, String> getAttributes() {
+        Map<String, String> attributes = new HashMap<>();
         attributes.put("fullName", user.getFullName());
         attributes.put("nickname", user.getNickname());
         attributes.put("phone", user.getPhone());
         attributes.put("email", user.getEmail());
         attributes.put("birth", user.getBirth().toString());
+
+        return attributes;
     }
 
-
-    @Override
-    public String getName() {
-        return user.getFullName();
-    }
-
-    @Override
-    public Map<String, Object> getAttributes() {
-        return this.attributes;
-    }
+    public Long getUserId(){ return user.getId(); }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.authorities;
+        return Collections.emptySet();
     }
 
     @Override
@@ -99,21 +67,4 @@ public class Principal implements UserDetails, OAuth2User, OidcUser, Serializabl
     public boolean isEnabled() {
         return true;
     }
-
-    @Override
-    public Map<String, Object> getClaims() {
-        return attributes;
-    }
-
-    @Override
-    public OidcUserInfo getUserInfo() {
-        return new OidcUserInfo(attributes);
-    }
-
-    @Override
-    public OidcIdToken getIdToken() {
-        return idToken;
-    }
-
-    public Long getUserId(){ return user.getId(); }
 }
