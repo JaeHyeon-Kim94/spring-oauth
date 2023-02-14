@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/authorization-server.main.iml" filepath="$PROJECT_DIR$/.idea/modules/authorization-server.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client.main.iml" filepath="$PROJECT_DIR$/.idea/modules/client.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/spring-oauth2.iml" filepath="$PROJECT_DIR$/spring-oauth2.iml" />
     </modules>
   </component>
