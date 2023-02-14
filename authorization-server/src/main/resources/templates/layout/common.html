@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:fragment="head(links)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-with, initial-scale=1.0"/>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/header.css}">
+    <script src="/js/rsa.js"></script>
+    <script src="/js/jsbn.js"></script>
+    <script src="/js/prng4.js"></script>
+    <script src="/js/rng.js"></script>
+    <th:block th:replace="${links}"/>
+</head>
+<body>
+</body>
+</html>

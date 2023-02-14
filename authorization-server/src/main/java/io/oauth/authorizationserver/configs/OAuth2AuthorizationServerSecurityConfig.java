@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
@@ -13,11 +14,9 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
@@ -27,6 +26,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +38,8 @@ import java.util.UUID;
 public class OAuth2AuthorizationServerSecurityConfig {
 
     private RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
@@ -45,6 +47,9 @@ public class OAuth2AuthorizationServerSecurityConfig {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain oauthSecurityFilterChain(HttpSecurity http) throws Exception {
+
+        http.authorizeRequests().requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll();
+
         //초기 설정 및 customize
         applyDefaultAuthorizationServerConfigure(http);
 
@@ -107,12 +112,12 @@ public class OAuth2AuthorizationServerSecurityConfig {
                 //2. Client Authentication Customize
                 .clientAuthentication( clientAuthenticationConfigurer -> { })
 
-                //3. token Endpoint
+                //3. token Endpoint Customize
                 .tokenEndpoint( tokenEndpointConfigurer -> {})
                 .tokenIntrospectionEndpoint( tokenIntrospectionEndpointConfigurer -> {})
                 .tokenRevocationEndpoint( tokenRevocationEndpointConfigurer -> {})
 
-                //4. OIDC endpoint
+                //4. OIDC endpoint Customize
                 .oidc( oidcConfigurer -> {});
     }
 
@@ -132,60 +137,24 @@ public class OAuth2AuthorizationServerSecurityConfig {
     }
 
     //등록된 OAuth Client를 관리하는 레포지토리 객체.
-    //TODO DB연동.
     @Bean
     public RegisteredClientRepository registeredClientRepository(){
-        InMemoryRegisteredClientRepository repository = new InMemoryRegisteredClientRepository(defaultRegisteredClient());
-
+        JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
         return repository;
     }
 
-    //TODO DB연동.
     @Bean
     public OAuth2AuthorizationService oAuth2AuthorizationService(){
         return new InMemoryOAuth2AuthorizationService();
+                //new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository());
     }
 
     @Bean
     public OAuth2AuthorizationConsentService oAuth2AuthorizationConsentService(){
         return new InMemoryOAuth2AuthorizationConsentService();
+                //new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository());
     }
 
 
-    private RegisteredClient defaultRegisteredClient() {
-        RegisteredClient.Builder builder = RegisteredClient.withId(UUID.randomUUID().toString());
-
-        RegisteredClient defaultClient = builder
-                .clientId("oauth2-client-app")
-                .clientSecret("{noop}secret")
-                //권한 부여 방식
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                //클라이언트 인증 방식 : Basic, Post
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-
-                //redirect uri
-                .redirectUri("http://127.0.0.1:8081")
-                .redirectUri("http://127.0.0.1:8081/login/oauth2/code/myOAuth")
-                //scopes
-                .scope(OidcScopes.OPENID)
-                .scope(OidcScopes.PROFILE)
-                .scope(OidcScopes.EMAIL)
-                .scope(OidcScopes.PHONE)
-
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-                .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofMinutes(5L)).build())
-                .build();
-
-        return defaultClient;
-    }
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer(){
-        return web -> {
-            web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
-        };
-    }
 
 }

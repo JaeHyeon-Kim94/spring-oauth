@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{layout/common :: head(~{::link})}">
+        <link rel="stylesheet" th:href="@{/css/signin.css}">
+    </head>
+    <body class="text-center">
+        <main class="form-signin w-100 m-auto">
+            <form th:action th:object="${user}" method="post" onsubmit="_onsubmit()">
+                <h1 class="my-3">회원가입</h1>
+
+                <p th:if="${error}" style="color:red;" th:text="${message}">에러 메시지</p>
+
+                <div class="row mb-5">
+                    <label for="username" class="col-sm-2 col-form-label">ID</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="username"  th:errorclass="field-error" th:field="*{username}"/>
+                        <div class="field-error" th:errors="*{username}">사용할 아이디를 입력하세요.</div>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" name="checkDuplicated" class="btn btn-outline-warning" onclick="isDuplicate('username')">중복 확인</button>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="password" class="col-sm-2 col-form-label">Password</label>
+                    <div class="col-sm-10">
+                        <input type="password" class="form-control" id="password" aria-describedby="passwordHelpBlock"  th:errorclass="field-error" th:field="*{password}" />
+                        <div class="field-error" th:errors="*{password}">사용할 패스워드를 입력하세요.</div>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="fullName" class="col-sm-2 col-form-label">성명</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="fullName" th:errorclass="field-error" th:field="*{fullName}"/>
+                        <div class="field-error" th:errors="*{fullName}">성명을 입력하세요.</div>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="nickname" class="col-sm-2 col-form-label">Nickname</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="nickname" th:errorclass="field-error" th:field="*{nickname}"/>
+                        <div class="field-error" th:errors="*{nickname}">사용할 닉네임을 입력하세요.</div>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" name="checkDuplicated" class="btn btn-outline-warning" onclick="isDuplicate('nickname')">중복 확인</button>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="phone" class="col-sm-2 col-form-label">phone</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="phone" th:errorclass="field-error" th:field="*{phone}"/>
+                        <div class="field-error" th:errors="*{phone}">핸드폰 번호를 입력하세요.</div>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="email" class="col-sm-2 col-form-label">email</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" id="email" th:errorclass="field-error" th:field="*{email}"/>
+                        <div class="field-error" th:errors="*{email}">이메일을 입력하세요.</div>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="birth" class="col-sm-2 col-form-label">birth</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control" placeholder="1900-01-01" id="birth" th:errorclass="field-error" th:field="*{birth}"/>
+                        <div class="field-error" th:errors="*{birth}">생년월일을 입력하세요.</div>
+                    </div>
+                </div>
+                <input type="hidden" id="modulus" th:value="${modulus}"/>
+                <input type="hidden" id="exponent" th:value="${exponent}">
+                <button id="sign-in" type="submit" class="btn btn-primary" disabled>Sign in</button>
+            </form>
+        </main>
+
+    <script>
+
+        let checkUsername = false;
+        let checkNickname = false;
+
+        function isDuplicate(type){
+
+            const usernameRegex = new RegExp("^(\\w){3,10}$")
+            const nicknameRegex = new RegExp("^([\\w|가-힣]){3,10}$");
+
+
+
+            let element = document.getElementById(type);
+            var value = element.value;
+
+            if(type==='nickname'){
+                var result = nicknameRegex.test(value);
+                if(!result){
+                    alert("허용되지 않는 형식입니다. 영문, 숫자 3자~10자");
+                    return;
+                }
+            }else if(type==='username'){
+                var result = usernameRegex.test(value);
+                if(!result){
+                    alert("허용되지 않는 형식입니다. 영문, 한글, 숫자 3자~10자");
+                    return;
+                }
+            }
+
+            _isDuplicate(type, value)
+        }
+
+        function _isDuplicate(type, value){
+
+
+            $.ajax({
+                url: "/members/"+type+"/"+value+"/check-duplicated",
+                type: "GET",
+                dataType: 'JSON'
+            })
+                .done(function(data){
+                    if(data === true){
+                        alert("사용할 수 있습니다.");
+                        if(type === 'nickname'){
+                            checkNickname = true;
+                        }else if(type === 'username'){
+                            checkUsername = true;
+                        }
+                        if( checkNickname && checkUsername){
+
+                            $('#sign-in').removeAttr('disabled');
+                            $('input[id=username]').attr('readonly', 'readonly');
+                            $('input[id=nickname]').attr('readonly', 'readonly');
+                            $('button[name=checkDuplicated]').attr('disabled', 'disabled');
+                        }
+                    }else{
+                        alert("사용할 수 없습니다.");
+                    }
+                })
+                .fail(function(xhr, status, errorThrown){
+                    console.log("에러 발생", status, errorThrown);
+                })
+        }
+
+        function _onsubmit(){
+            let n = document.getElementById('modulus').value;
+            let e = document.getElementById('exponent').value;
+
+            let password = document.getElementById('password').value;
+
+            const rsaKey = new RSAKey();
+            rsaKey.setPublic(n, e);
+
+            document.getElementById('password').value = rsaKey.encrypt(password);
+        }
+
+        function isNullOrEmpty(value){
+            if(value == null || value ===''){
+                return true;
+            }
+        }
+    </script>
+        <script
+                src="https://code.jquery.com/jquery-3.6.3.js"
+                integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM="
+                crossorigin="anonymous"></script>
+    </body>
+</html>

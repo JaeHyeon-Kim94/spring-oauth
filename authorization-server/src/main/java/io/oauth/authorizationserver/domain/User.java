@@ -1,9 +1,6 @@
 package io.oauth.authorizationserver.domain;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,13 +9,14 @@ import java.time.LocalDateTime;
 @Setter
 @ToString
 @EqualsAndHashCode
+@Builder
 public class User {
 
     private Long id;
     private String username;
     private String password;
 
-    private String name;
+    private String fullName;
     private String nickname;
 
     private String phone;

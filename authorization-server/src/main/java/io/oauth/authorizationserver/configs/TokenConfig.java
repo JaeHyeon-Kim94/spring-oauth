@@ -7,10 +7,14 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import io.oauth.authorizationserver.domain.User;
+import io.oauth.authorizationserver.model.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.token.*;
 
@@ -21,6 +25,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Configuration
@@ -30,14 +35,29 @@ public class TokenConfig {
     public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator(){
         //JwtGenerator
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder());
-        //TODO : jwt claim customize
-        // jwtGenerator.setJwtCustomizer();
+
+         jwtGenerator.setJwtCustomizer(context -> {
+             JwtClaimsSet.Builder claims = context.getClaims();
+
+             Principal principal = (Principal)context.getPrincipal().getPrincipal();
+             Map<String, Object> attributes = principal.getAttributes();
+
+             claims
+                     .subject(String.valueOf(principal.getUserId()));
+
+             for (String s : attributes.keySet()) {
+                 claims.claim(s, attributes.get(s));
+             }
+             claims.build();
+         });
 
 
         //AccessToken Generator
         OAuth2AccessTokenGenerator oAuth2AccessTokenGenerator = new OAuth2AccessTokenGenerator();
         //TODO
-        //oAuth2AccessTokenGenerator.setAccessTokenCustomizer();
+        oAuth2AccessTokenGenerator.setAccessTokenCustomizer(context -> {
+
+        });
 
         //RefreshToken Generator
         OAuth2RefreshTokenGenerator oAuth2RefreshTokenGenerator = new OAuth2RefreshTokenGenerator();

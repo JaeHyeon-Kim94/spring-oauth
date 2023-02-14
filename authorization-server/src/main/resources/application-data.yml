@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/oauth?serverTimezone=Asia/Seoul
+    username: oauth
+    password: 1234
+
+mybatis:
+  type-aliases-package: io.oauth.authorizationserver.domain
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/**/*.xml

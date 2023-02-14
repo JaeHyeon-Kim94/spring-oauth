@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.oauth.authorizationserver.repository.UserMapper">
+
+    <resultMap id="userResultMap" type="User">
+        <id property="id" column="id"/>
+        <result property="username" column="user_name"/>
+        <result property="password" column="password"/>
+        <result property="name" column="fullName"/>
+        <result property="nickname" column="nickname"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="birth" column="birth"/>
+        <result property="regDate" column="reg_date"/>
+        <result property="modDate" column="mod_date"/>
+    </resultMap>
+
+    <insert id="save" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_user
+        ( user_name, password, name, nickname, phone, email, birth)
+        VALUES
+        ( #{username}, #{password}, #{fullName}, #{nickname}, #{phone}, #{email}, #{birth})
+    </insert>
+
+    <sql id="selectUser">
+        SELECT
+        id, user_name, password, name, nickname, phone, email, birth, reg_date, mod_date
+        FROM tb_user
+    </sql>
+
+    <select id="findById" resultMap="userResultMap">
+        <include refid="selectUser"/>
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUsername" resultMap="userResultMap">
+        <include refid="selectUser"/>
+        WHERE user_name = #{username}
+    </select>
+
+    <select id="isDuplicate" resultType="boolean">
+        SELECT IF(COUNT(*) >=1, 0, 1)
+        FROM tb_user
+            <if test="type.equals('nickname')">
+                WHERE nickname = #{value}
+            </if>
+            <if test="type.equals('username')">
+                WHERE user_name = #{value}
+            </if>
+    </select>
+</mapper>

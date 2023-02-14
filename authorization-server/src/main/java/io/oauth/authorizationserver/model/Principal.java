@@ -11,21 +11,26 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class Principal implements UserDetails, OAuth2User, OidcUser, Serializable {
     private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
-    private final User user;
-    private final Set<GrantedAuthority> authorities;
+    private User user;
+    private Set<GrantedAuthority> authorities;
 
-    private final Map<String, Object> attributes;
+    private Map<String, Object> attributes;
 
     private String nameAttributeKey;
 
     private OidcIdToken idToken;
 
-    //oauth2
+    public Principal(User user) {
+        this.user = user;
+        setAttributesByUser(user);
+    }
+
     public Principal(User user, Map<String, Object> attributes, Set<GrantedAuthority> authorities, String nameAttributeKey) {
         this.user = user;
         this.attributes = attributes;
@@ -33,7 +38,6 @@ public class Principal implements UserDetails, OAuth2User, OidcUser, Serializabl
         this.nameAttributeKey = nameAttributeKey;
     }
 
-    //oidc
     public Principal(User user, Map<String, Object> attributes, Set<GrantedAuthority> authorities, OidcIdToken idToken) {
         this.user = user;
         this.attributes = attributes;
@@ -41,9 +45,19 @@ public class Principal implements UserDetails, OAuth2User, OidcUser, Serializabl
         this.idToken = idToken;
     }
 
+    private void setAttributesByUser(User user) {
+        this.attributes = new HashMap<>();
+        attributes.put("fullName", user.getFullName());
+        attributes.put("nickname", user.getNickname());
+        attributes.put("phone", user.getPhone());
+        attributes.put("email", user.getEmail());
+        attributes.put("birth", user.getBirth().toString());
+    }
+
+
     @Override
     public String getName() {
-        return user.getName();
+        return user.getFullName();
     }
 
     @Override
@@ -100,4 +114,6 @@ public class Principal implements UserDetails, OAuth2User, OidcUser, Serializabl
     public OidcIdToken getIdToken() {
         return idToken;
     }
+
+    public Long getUserId(){ return user.getId(); }
 }

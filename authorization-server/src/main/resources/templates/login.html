@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{layout/common :: head(~{::link})}">
+        <link rel="stylesheet" th:href="@{/css/signin.css}">
+    </head>
+    <body class="text-center">
+        <main class="form-signin w-100 m-auto">
+            <form th:action="@{/login}" method="post" onsubmit="_onsubmit()">
+                <h1 class="h3 mb-3 fw-normal">로그인</h1>
+                <p th:if="${error}" style="color:red;" th:text="${message}">아이디 혹은 비밀번호가 틀렸습니다.</p>
+
+                <div class="row mb-5">
+                    <label for="username" class="col-2 col-form-label">id</label>
+                    <div class="col-10">
+                        <input type="text" class="form-control" placeholder="ID" id="username" name="username" autofocus/>
+                    </div>
+                </div>
+                <div class="row mb-5">
+                    <label for="password" class="col-2 col-form-label">Password</label>
+                    <div class="col-10">
+                        <input type="password" class="form-control" placeholder="Password" id="password" name="password"/>
+                    </div>
+                </div>
+                <input type="hidden" id="modulus" th:value="${modulus}"/>
+                <input type="hidden" id="exponent" th:value="${exponent}">
+                <button class="w-100 btn btn-lg btn-primary my-3" type="submit">Sign in</button>
+                <button class="w-100 btn btn-lg btn-dark my-3" type="button" th:onclick="|location.href='@{/join}'|">Sign up</button>
+            </form>
+        </main>
+
+
+
+    <script>
+        function _onsubmit(){
+
+            let username = document.getElementById('username').value;
+            let password = document.getElementById('password').value;
+
+            if(isNullOrEmpty(username) || isNullOrEmpty(password)){
+                alert("아이디 혹은 비밀번호 입력해주세요.");
+                return;
+            }
+
+
+
+            let n = document.getElementById('modulus').value;
+            let e = document.getElementById('exponent').value;
+
+
+
+            const rsaKey = new RSAKey();
+            rsaKey.setPublic(n, e);
+
+            let encrytedPassword = rsaKey.encrypt(password);
+            document.getElementById('password').value = encrytedPassword;
+        }
+
+        function isNullOrEmpty(value){
+            if(value == null || value ===''){
+                return true;
+            }
+        }
+    </script>
+    </body>
+</html>
