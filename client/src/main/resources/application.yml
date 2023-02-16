@@ -4,3 +4,11 @@ server:
 spring:
   profiles:
     include: oauth2, data
+
+custom:
+  jwt:
+    trusted-issuerUri:
+      - http://localhost:9000
+      - https://www.googleapis.com
+
+

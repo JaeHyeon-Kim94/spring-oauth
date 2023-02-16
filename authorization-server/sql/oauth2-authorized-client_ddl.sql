@@ -1,6 +1,10 @@
-CREATE TABLE oauth2_authorized_client (
+CREATE TABLE oauth2_authorized_client
+(
                                           client_registration_id varchar(100) NOT NULL,
                                           principal_name varchar(200) NOT NULL,
+                                          id_token_value blob NULL,
+                                          id_token_issued_at timestamp NULL,
+                                          id_token_expires_at timestamp NULL,
                                           access_token_type varchar(100) NOT NULL,
                                           access_token_value blob NOT NULL,
                                           access_token_issued_at timestamp NOT NULL,

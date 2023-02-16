@@ -1,5 +1,7 @@
 package io.oauth.client.resolver;
 
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.server.resource.BearerTokenError;
@@ -21,8 +23,6 @@ public class CustomeBearerTokenResolver implements BearerTokenResolver {
     private static final Pattern authorizationPattern = Pattern.compile("^Bearer (?<token>[a-zA-Z0-9-._~+/]+=*)$",
             Pattern.CASE_INSENSITIVE);
 
-    private static final String DEFAULT_REQUEST_URI = "/registered-client/*/member/*";
-
     private static final String REDIRECT_ATTRIBUTE_FLASH_MAP = "org.springframework.web.servlet.DispatcherServlet.INPUT_FLASH_MAP";
 
 
@@ -35,20 +35,9 @@ public class CustomeBearerTokenResolver implements BearerTokenResolver {
     public String resolve(HttpServletRequest request) {
         String idTokenValue = null;
 
-        AntPathRequestMatcher antPathRequestMatcher = new AntPathRequestMatcher(DEFAULT_REQUEST_URI);
-        if(antPathRequestMatcher.matches(request)){
-            String uri = request.getRequestURI();
-            String[] parts = uri.split("/");
-
-            //oAuth2AuthorizedClientService.loadAuthorizedClient()
-        }else{
-            String idTokenFromCookie = resolveFromCookie(request);
-            String idTokenFromRedirectAttributes = resolveFromFlashMap(request);
-
-            idTokenValue = StringUtils.hasText(idTokenFromCookie) ? idTokenFromCookie : idTokenFromRedirectAttributes;
-        }
-
-        return idTokenValue;
+        String tokenFromCookie = resolveFromCookie(request);
+        String tokenFromFlashMap = resolveFromFlashMap(request);
+        return (tokenFromCookie!= null ? tokenFromCookie : tokenFromFlashMap );
     }
 
     private String resolveFromCookie(HttpServletRequest request){
@@ -57,10 +46,7 @@ public class CustomeBearerTokenResolver implements BearerTokenResolver {
         String idTokenValue = null;
         for (Cookie cookie : cookies) {
             if(cookie.getName().equals("o_id")){
-                String tempValue = new String(Base64.getDecoder().decode(cookie.getValue().getBytes(StandardCharsets.UTF_8)));
-                if(StringUtils.startsWithIgnoreCase(tempValue, "Bearer ")){
-                    idTokenValue = tempValue;
-                }
+                idTokenValue = cookie.getValue();
             }
         }
         if(idTokenValue == null) return null;
@@ -85,7 +71,7 @@ public class CustomeBearerTokenResolver implements BearerTokenResolver {
 
 
     private String matchesWithPattern(String idTokenValue) {
-        Matcher matcher = authorizationPattern.matcher(idTokenValue);
+        Matcher matcher = authorizationPattern.matcher("Bearer "+idTokenValue);
         if(!matcher.matches()){
             BearerTokenError error = BearerTokenErrors.invalidToken("Bearer token is malformed");
             throw new OAuth2AuthenticationException(error);

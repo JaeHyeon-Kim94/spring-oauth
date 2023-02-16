@@ -9,6 +9,7 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import io.oauth.authorizationserver.domain.User;
 import io.oauth.authorizationserver.model.Principal;
+import io.oauth.generator.CustomJwtGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,9 +35,9 @@ public class TokenConfig {
     @Bean
     public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator(){
         //JwtGenerator
-        JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder());
+        CustomJwtGenerator customJwtGenerator = customJwtGenerator();
 
-         jwtGenerator.setJwtCustomizer(context -> {
+        customJwtGenerator.setJwtCustomizer(context -> {
              JwtClaimsSet.Builder claims = context.getClaims();
 
              Principal principal = (Principal)context.getPrincipal().getPrincipal();
@@ -62,7 +63,12 @@ public class TokenConfig {
         //RefreshToken Generator
         OAuth2RefreshTokenGenerator oAuth2RefreshTokenGenerator = new OAuth2RefreshTokenGenerator();
 
-        return new DelegatingOAuth2TokenGenerator(jwtGenerator, oAuth2AccessTokenGenerator, oAuth2RefreshTokenGenerator);
+        return new DelegatingOAuth2TokenGenerator(customJwtGenerator, oAuth2AccessTokenGenerator, oAuth2RefreshTokenGenerator);
+    }
+
+    @Bean
+    public CustomJwtGenerator customJwtGenerator(){
+        return new CustomJwtGenerator(jwtEncoder());
     }
 
 
