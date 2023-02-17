@@ -2,6 +2,7 @@ package io.oauth.client.configs;
 
 
 import io.oauth.client.configs.propertiesconfig.JwtProperties;
+import io.oauth.client.provider.CustomRefreshTokenOAuth2AuthorizedClientProvider;
 import io.oauth.client.service.CustomJdbcOAuth2AuthorizedClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,7 @@ public class OAuth2ClientConfig {
                                                                         OAuth2AuthorizedClientRepository auth2AuthorizedClientRepository){
         OAuth2AuthorizedClientProvider authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
                 .authorizationCode()
-                //TODO .provider()
+                .provider(customRefreshTokenOAuth2AuthorizedClientProvider())
                 .build();
 
         DefaultOAuth2AuthorizedClientManager defaultOAuth2AuthorizedClientManager
@@ -69,6 +70,11 @@ public class OAuth2ClientConfig {
     @Bean
     public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver(){
         return new JwtIssuerAuthenticationManagerResolver(jwtProperties.getTrustedIssuerUri());
+    }
+
+    @Bean
+    public CustomRefreshTokenOAuth2AuthorizedClientProvider customRefreshTokenOAuth2AuthorizedClientProvider(){
+        return new CustomRefreshTokenOAuth2AuthorizedClientProvider();
     }
 
 }

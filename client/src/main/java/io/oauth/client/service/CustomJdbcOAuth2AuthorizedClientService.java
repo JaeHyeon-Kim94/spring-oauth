@@ -1,6 +1,5 @@
 package io.oauth.client.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.oauth.client.model.CustomOAuth2AuthorizedClient;
 import io.oauth.utils.JwtUtils;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -223,11 +222,9 @@ public class CustomJdbcOAuth2AuthorizedClientService extends JdbcOAuth2Authorize
                     expiresAt = idTokenExpiresAt.toInstant();
                 }
 
-                try {
-                    idToken = new OidcIdToken(tokenValue, issuedAt, expiresAt, JwtUtils.getClaims(tokenValue));
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+
+                idToken = new OidcIdToken(tokenValue, issuedAt, expiresAt, JwtUtils.getClaims(tokenValue));
+
             }
 
             String principalName = rs.getString("principal_name");

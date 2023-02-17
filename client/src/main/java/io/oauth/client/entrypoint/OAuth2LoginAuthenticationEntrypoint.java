@@ -1,5 +1,7 @@
 package io.oauth.client.entrypoint;
 
+import io.oauth.client.model.CustomOAuth2AuthorizedClient;
+import io.oauth.utils.CookieUtils;
 import io.oauth.utils.JwtUtils;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
@@ -8,6 +10,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -35,8 +38,12 @@ public class OAuth2LoginAuthenticationEntrypoint implements AuthenticationEntryP
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        if(authException.getCause() instanceof JwtValidationException){
+        Throwable cause = authException.getCause();
+        if (cause instanceof JwtValidationException) {
             getNewAccessToken(request, response);
+        } else {
+            CookieUtils.deleteCookies(request, response);
+            response.sendRedirect("/");
         }
     }
 
@@ -62,6 +69,7 @@ public class OAuth2LoginAuthenticationEntrypoint implements AuthenticationEntryP
         }
 
         Map<String, Object> claims = JwtUtils.getClaims(idToken);
+
         if(claims.isEmpty()){
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "사용자 정보 처리 중 오류 발생");
         }
@@ -87,5 +95,26 @@ public class OAuth2LoginAuthenticationEntrypoint implements AuthenticationEntryP
                 .build();
 
         OAuth2AuthorizedClient authorize = oauth2AuthorizedClientManager.authorize(oAuth2AuthorizeRequest);
+
+        CustomOAuth2AuthorizedClient reAuthorizedClient = (CustomOAuth2AuthorizedClient)authorize;
+
+        OidcIdToken refreshedIdToken = reAuthorizedClient.getIdToken();
+        addCookie("o_id", refreshedIdToken.getTokenValue(), response);
+
+        regId = reAuthorizedClient.getClientRegistration().getRegistrationId();
+        addCookie("r_id", Base64.getEncoder().encodeToString(regId.getBytes()), response);
+
+
+        response.sendRedirect("/");
     }
+
+    private void addCookie(String key, String value, HttpServletResponse response){
+        Cookie cookie = new Cookie(key, value);
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(60*60*24);
+        cookie.setPath("/");
+
+        response.addCookie(cookie);
+    }
+
 }

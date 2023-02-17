@@ -5,6 +5,8 @@ import io.oauth.client.handler.CustomOAuth2LoginSuccessHandler;
 import io.oauth.client.resolver.CustomeBearerTokenResolver;
 import io.oauth.client.service.CustomOAuth2UserService;
 import io.oauth.client.service.CustomOidcUserService;
+import io.oauth.utils.CookieUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +22,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.http.HttpServletRequest;
-
+@Slf4j
 @EnableWebSecurity
 public class SecurityConfig {
     @Autowired
@@ -72,10 +74,27 @@ public class SecurityConfig {
                 .logout(logoutConfigurer -> logoutConfigurer
                         .logoutUrl("/logout")
                         .logoutRequestMatcher(new AntPathRequestMatcher("/logout", HttpMethod.GET.name()))
-                        .deleteCookies("o_id")
+                        .deleteCookies("o_id", "r_id", "JSESSIONID")
                         .logoutSuccessUrl("/")
                         .addLogoutHandler(jwtLogoutHandler)
                 );
+
+        http
+                .exceptionHandling( exceptionHandlingConfigurer->{
+                    exceptionHandlingConfigurer
+                            .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                log.error("Access Denied ::===>{}\n\n======================================= {} ====================================================\n\n"
+                                        , accessDeniedException.getMessage(), accessDeniedException.getStackTrace());
+                                CookieUtils.deleteCookies(request, response);
+                                response.sendRedirect("/");
+                            })
+                            .authenticationEntryPoint((request, response, authException) -> {
+                                log.error("Access Denied ::===>{}\n\n======================================= {} ====================================================\n\n"
+                                        , authException.getMessage(), authException.getStackTrace());
+                                CookieUtils.deleteCookies(request, response);
+                                response.sendRedirect("/login");
+                            });
+                });
 
         http.sessionManagement( sessionConfigurer -> sessionConfigurer
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
