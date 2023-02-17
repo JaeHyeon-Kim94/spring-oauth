@@ -1,7 +1,6 @@
 package io.oauth.client.entrypoint;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.oauth.utils.JwtUtils;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -34,8 +33,6 @@ public class OAuth2LoginAuthenticationEntrypoint implements AuthenticationEntryP
         this.oauth2AuthorizedClientManager = oauth2AuthorizedClientManager;
     }
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         if(authException.getCause() instanceof JwtValidationException){
@@ -64,15 +61,15 @@ public class OAuth2LoginAuthenticationEntrypoint implements AuthenticationEntryP
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "다시 로그인해주세요.");
         }
 
-        Base64.Decoder decoder = Base64.getDecoder();
+        Map<String, Object> claims = JwtUtils.getClaims(idToken);
+        if(claims.isEmpty()){
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "사용자 정보 처리 중 오류 발생");
+        }
 
-        idToken = new String(decoder.decode(idToken.split("\\.")[1]));
-        Map map = objectMapper.readValue(idToken, Map.class);
-
-        regId = new String(decoder.decode(regId));
+        regId = new String(Base64.getDecoder().decode(regId));
 
         OAuth2AuthorizedClient authorizedClient
-                = oAuth2AuthorizedClientService.loadAuthorizedClient(regId, (String) map.get("sub"));
+                = oAuth2AuthorizedClientService.loadAuthorizedClient(regId, (String) claims.get("sub"));
 
         ClientRegistration clientRegistration = ClientRegistration.withClientRegistration(authorizedClient.getClientRegistration())
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
