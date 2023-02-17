@@ -1,4 +1,4 @@
-package io.oauth.generator;
+package io.oauth.authorizationserver.generator;
 
 import org.springframework.lang.Nullable;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;

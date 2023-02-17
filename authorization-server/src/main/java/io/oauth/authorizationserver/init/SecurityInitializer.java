@@ -1,6 +1,5 @@
 package io.oauth.authorizationserver.init;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -57,7 +56,11 @@ public class SecurityInitializer implements ApplicationRunner {
                 .scope(OidcScopes.PHONE)
 
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-                .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofMinutes(5L)).build())
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofMinutes(60L))
+                        .reuseRefreshTokens(true)
+                        .refreshTokenTimeToLive(Duration.ofMinutes(60L*24*7))
+                        .build())
                 .build();
 
         return defaultClient;
