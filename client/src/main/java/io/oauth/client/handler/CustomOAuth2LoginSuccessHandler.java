@@ -18,6 +18,9 @@ public class CustomOAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSucc
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        if(!(authentication.getPrincipal() instanceof OidcUser)){
+            throw new RuntimeException("OIDC방식만 지원함.");
+        }
         OAuth2AuthenticationToken authenticationToken = (OAuth2AuthenticationToken)authentication;
         OidcUser principal = (OidcUser) authentication.getPrincipal();
         OidcIdToken idToken = principal.getIdToken();

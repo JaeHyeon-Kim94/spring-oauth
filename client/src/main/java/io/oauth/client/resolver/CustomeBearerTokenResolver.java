@@ -8,7 +8,6 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,11 +26,7 @@ public class CustomeBearerTokenResolver implements BearerTokenResolver {
     }
     @Override
     public String resolve(HttpServletRequest request) {
-        String idTokenValue = null;
-
-        String tokenFromCookie = resolveFromCookie(request);
-        String tokenFromFlashMap = resolveFromFlashMap(request);
-        return (tokenFromCookie!= null ? tokenFromCookie : tokenFromFlashMap );
+        return resolveFromCookie(request);
     }
 
     private String resolveFromCookie(HttpServletRequest request){
@@ -47,22 +42,6 @@ public class CustomeBearerTokenResolver implements BearerTokenResolver {
 
         return matchesWithPattern(idTokenValue);
     }
-
-    private String resolveFromFlashMap(HttpServletRequest request) {
-
-        Map<String, Object> flash = (Map<String, Object>) request.getAttribute(REDIRECT_ATTRIBUTE_FLASH_MAP);
-
-        String idTokenValue = null;
-        if(flash!=null && !flash.isEmpty()){
-            Object value = flash.get("Authorization");
-            idTokenValue = value == null ? null : (String)value;
-        }
-
-        if(idTokenValue == null) return null;
-
-        return matchesWithPattern(idTokenValue);
-    }
-
 
     private String matchesWithPattern(String idTokenValue) {
         Matcher matcher = authorizationPattern.matcher("Bearer "+idTokenValue);

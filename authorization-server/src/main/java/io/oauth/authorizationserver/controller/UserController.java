@@ -20,7 +20,9 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 
@@ -48,11 +50,7 @@ public class UserController {
         model.addAttribute("error", error);
         model.addAttribute("message", message);
 
-        Map<String, Object> keys = RSAUtil.getRSAKeys();
-
-        model.addAttribute("modulus", (String)keys.get("modulus"));
-        model.addAttribute("exponent", (String)keys.get("exponent"));
-        session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
+        setModelAndSessionRsaKey(model, session);
 
         return "login";
     }
@@ -60,24 +58,17 @@ public class UserController {
     @GetMapping("/join")
     public String join(Model model, HttpSession session) throws NoSuchAlgorithmException, InvalidKeySpecException {
         model.addAttribute("user", new UserJoinDto());
-        Map<String, Object> keys = RSAUtil.getRSAKeys();
-
-        model.addAttribute("modulus", (String)keys.get("modulus"));
-        model.addAttribute("exponent", (String)keys.get("exponent"));
-        session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
-
+        setModelAndSessionRsaKey(model, session);
         return "join";
     }
+
+
 
     @PostMapping("/join")
     public String join(@Validated @ModelAttribute("user") UserJoinDto userJoinDto, BindingResult bindingResult, Model model, HttpSession session) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, InvalidKeySpecException {
         if(bindingResult.hasErrors()){
             log.info(bindingResult.getAllErrors().toString());
-            Map<String, Object> keys = RSAUtil.getRSAKeys();
-
-            model.addAttribute("modulus", (String)keys.get("modulus"));
-            model.addAttribute("exponent", (String)keys.get("exponent"));
-            session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
+            setModelAndSessionRsaKey(model, session);
             return "/join";
         }
 
@@ -113,6 +104,14 @@ public class UserController {
         boolean result = userService.checkIsDuplicated(type, value);
 
         return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    private void setModelAndSessionRsaKey(Model model, HttpSession session) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        Map<String, Object> keys = RSAUtil.getRSAKeys();
+
+        model.addAttribute("modulus", (String)keys.get("modulus"));
+        model.addAttribute("exponent", (String)keys.get("exponent"));
+        session.setAttribute(PRIVATE_KEY_NAME, (PrivateKey)(keys.get(PRIVATE_KEY_NAME)));
     }
 
 }

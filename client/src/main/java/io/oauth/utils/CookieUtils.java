@@ -8,6 +8,7 @@ public class CookieUtils {
 
     public static void deleteCookies(HttpServletRequest request, HttpServletResponse response) {
         Cookie[] cookies = request.getCookies();
+        if(cookies == null) return;
         for (Cookie cookie : cookies) {
             Cookie cookieForDelete = new Cookie(cookie.getName(), null);
             cookieForDelete.setMaxAge(0);

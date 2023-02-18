@@ -4,24 +4,18 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import io.oauth.authorizationserver.generator.CustomJwtGenerator;
-import io.oauth.authorizationserver.model.Principal;
+import io.oauth.authorizationserver.customizer.JwtGeneratorCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.core.OAuth2Token;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.*;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Map;
 import java.util.UUID;
 
 @Configuration
@@ -30,23 +24,9 @@ public class TokenConfig {
     @Bean
     public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator(){
         //JwtGenerator
-        CustomJwtGenerator customJwtGenerator = customJwtGenerator();
+        JwtGenerator jwtGenerator = jwtGenerator();
 
-        customJwtGenerator.setJwtCustomizer(context -> {
-             JwtClaimsSet.Builder claims = context.getClaims();
-
-             Principal principal = (Principal)context.getPrincipal().getPrincipal();
-             Map<String, String> attributes = principal.getAttributes();
-
-             claims
-                     .subject(String.valueOf(principal.getUserId()));
-
-             for (String s : attributes.keySet()) {
-                 claims.claim(s, attributes.get(s));
-             }
-             claims.build();
-         });
-
+        jwtGenerator.setJwtCustomizer(new JwtGeneratorCustomizer());
 
         //AccessToken Generator
         OAuth2AccessTokenGenerator oAuth2AccessTokenGenerator = new OAuth2AccessTokenGenerator();
@@ -58,12 +38,12 @@ public class TokenConfig {
         //RefreshToken Generator
         OAuth2RefreshTokenGenerator oAuth2RefreshTokenGenerator = new OAuth2RefreshTokenGenerator();
 
-        return new DelegatingOAuth2TokenGenerator(customJwtGenerator, oAuth2AccessTokenGenerator, oAuth2RefreshTokenGenerator);
+        return new DelegatingOAuth2TokenGenerator(jwtGenerator, oAuth2AccessTokenGenerator, oAuth2RefreshTokenGenerator);
     }
 
     @Bean
-    public CustomJwtGenerator customJwtGenerator(){
-        return new CustomJwtGenerator(jwtEncoder());
+    public JwtGenerator jwtGenerator(){
+        return new JwtGenerator(jwtEncoder());
     }
 
 

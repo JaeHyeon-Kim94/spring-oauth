@@ -9,6 +9,6 @@ custom:
   jwt:
     trusted-issuerUri:
       - http://localhost:9000
-      - https://www.googleapis.com
+      - https://accounts.google.com
 
 

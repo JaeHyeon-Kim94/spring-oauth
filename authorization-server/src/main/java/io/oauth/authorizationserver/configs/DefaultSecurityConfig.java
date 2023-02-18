@@ -7,27 +7,38 @@ import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.servlet.http.HttpSession;
-import java.security.KeyPair;
 
 @EnableWebSecurity
 public class DefaultSecurityConfig {
 
+    private static final String[] PERMIT_ALL_PATTERN = { "/", "/login", "/join", "/members/**/check-duplicated" };
+
 
     @Autowired
     private ObjectFactory<HttpSession> httpSessionFactory;
+
+    @Autowired
+    private AuthenticationConfiguration authenticationConfiguration;
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer(){
+        return web -> {
+            web.ignoring()
+                    .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
+            ;
+        };
+    }
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -36,8 +47,8 @@ public class DefaultSecurityConfig {
 
         http.authorizeRequests(request ->
                 request
-                        .antMatchers("/login", "/join", "/members/**/check-duplicated").permitAll()
-                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                        .antMatchers("/", "/error", "/login", "/join", "/members/**/check-duplicated").permitAll()
+                        .antMatchers("/test").hasAuthority("ROLE_TEST")
                         .anyRequest().authenticated());
         http.formLogin(
                 formLoginConfigurer -> formLoginConfigurer
@@ -69,9 +80,27 @@ public class DefaultSecurityConfig {
                 .invalidSessionUrl("/login")
                 .sessionFixation().none();
 
+        //PermitAllFilter
+//        http
+//                .addFilterAt(permitAllFilter(), FilterSecurityInterceptor.class);
+
 
 
         return http.build();
+    }
+
+//    @Bean
+//    public PermitAllFilter permitAllFilter() {
+//
+//        PermitAllFilter permitAllFilter = new PermitAllFilter(PERMIT_ALL_PATTERN);
+//        permitAllFilter.setSecurityMetadataSource(urlFilterInvocationSecurityMetadataSource());
+//        permitAllFilter.setAccessDecisionManager(affirmitiveBased);
+//
+//    }
+
+    @Bean
+    public AuthenticationManager authenticationManager() throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
